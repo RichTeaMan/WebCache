@@ -1,4 +1,6 @@
 ﻿
+using System.Text;
+
 namespace RichTea.WebCache
 {
     public sealed class WebDocument
@@ -10,7 +12,20 @@ namespace RichTea.WebCache
 
         public WebDocument(string url, byte[] binaryDocument)
         {
-            Binary = Binary;
+            Url = url;
+            Binary = binaryDocument;
+        }
+
+        public string GetContents()
+        {
+            var contents = GetContents(Encoding.UTF8);
+            return contents;
+        }
+
+        public string GetContents(Encoding encoding)
+        {
+            string contents = encoding.GetString(Binary);
+            return contents;
         }
 
     }
