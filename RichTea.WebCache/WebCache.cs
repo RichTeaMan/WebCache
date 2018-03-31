@@ -18,6 +18,8 @@ namespace RichTea.WebCache
 
         public string CacheName { get; private set; }
 
+        public string UserAgent { get; set; } = "RichTea.WebCache";
+
         #region Messages
 
         protected void FireMessage(Message message)
@@ -133,7 +135,15 @@ namespace RichTea.WebCache
             var cachePath = GetCachePath(url);
             if (File.Exists(cachePath))
             {
-                binary = File.ReadAllBytes(url);
+                try
+                {
+                    binary = File.ReadAllBytes(cachePath);
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Cannot read '{cachePath}' from cache.");
+                    Console.WriteLine(ex);
+                }
             }
             return binary;
         }
@@ -156,6 +166,7 @@ namespace RichTea.WebCache
             {
                 using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
                 {
+                    client.Headers.Add("User-Agent", UserAgent);
                     result = client.DownloadData(url);
                 }
                 SaveResourceToCache(url, result);
