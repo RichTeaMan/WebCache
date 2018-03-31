@@ -1,5 +1,6 @@
 ﻿
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace RichTea.WebCache
 {
@@ -26,6 +27,20 @@ namespace RichTea.WebCache
         {
             string contents = encoding.GetString(Binary);
             return contents;
+        }
+
+        public string GetContentsWithUnescapedHtml()
+        {
+            var contents = GetContents();
+            return contents.Replace("&nbsp;", string.Empty).Replace("&#160;", string.Empty).Replace("&#8212;", "-").Trim();
+        }
+
+        public string GetContentsWithRemovedHtml()
+        {
+            var contents = GetContents();
+            var htmlRegex = new Regex("<[^>]+>");
+            var cleaned = htmlRegex.Replace(contents, string.Empty);
+            return cleaned;
         }
 
     }

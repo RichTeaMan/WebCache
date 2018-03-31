@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace RichTea.WebCache
 
         public string CacheName { get; private set; }
 
-        public string UserAgent { get; set; } = "RichTea.WebCache";
+        public string UserAgent { get; set; } = $"RichTea.WebCache/{Constants.VersionToken}";
 
         #region Messages
 
@@ -78,6 +79,8 @@ namespace RichTea.WebCache
         public WebCache(string cacheName)
         {
             CacheName = cacheName;
+            var version = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            UserAgent = UserAgent.Replace(Constants.VersionToken, version);
         }
 
         protected virtual GeneratorException GetGeneratorException(string value, Exception innerException = null)
@@ -104,29 +107,11 @@ namespace RichTea.WebCache
             var binary = GetBinaryFromCache(url);
             if (binary == null)
             {
-                binary = DownloadWebPage(url);
+                binary = GetWebResource(url);
                 SaveBinaryToCache(url, binary);
             }
             var webDocument = new WebDocument(url, binary);
             return webDocument;
-        }
-
-        private byte[] DownloadWebPage(string url)
-        {
-            try
-            {
-                byte[] result;
-                using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
-                {
-                    result = client.DownloadData(url);
-                }
-                return result;
-            }
-            catch (WebException ex)
-            {
-                Console.WriteLine("Exception downloading web page from url '{0}'.\n{1}", url, ex);
-                throw ex;
-            }
         }
 
         protected byte[] GetBinaryFromCache(string url)
@@ -159,17 +144,24 @@ namespace RichTea.WebCache
             File.WriteAllBytes(cachePath, binary);
         }
 
-        protected byte[] GetWebResource(string url)
+        public byte[] GetWebResource(string url)
         {
             var result = GetResourceFromCache(url);
             if (result == null)
             {
-                using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
+                try
                 {
-                    client.Headers.Add("User-Agent", UserAgent);
-                    result = client.DownloadData(url);
+                    using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
+                    {
+                        client.Headers.Add("User-Agent", UserAgent);
+                        result = client.DownloadData(url);
+                    }
+                    SaveResourceToCache(url, result);
                 }
-                SaveResourceToCache(url, result);
+                catch (WebException ex)
+                {
+                    Console.WriteLine("Exception downloading web page from url '{0}'.\n{1}", url, ex);
+                }
             }
             return result;
         }
@@ -198,17 +190,6 @@ namespace RichTea.WebCache
             File.WriteAllBytes(cachePath, binary);
         }
 
-        protected string Unescape(string input)
-        {
-            return input.Replace("&nbsp;", "").Replace("&#160;", "").Replace("&#8212;", "-").Trim();
-        }
-
-        protected string RemoveHtml(string input)
-        {
-            var htmlRegex = new Regex("<[^>]+>");
-            var cleaned = htmlRegex.Replace(input, "");
-            return cleaned;
-        }
 
     }
 }
