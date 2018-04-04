@@ -7,6 +7,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RichTea.WebCache
@@ -17,9 +18,19 @@ namespace RichTea.WebCache
 
         public event MessageEventHandler Message;
 
+        public string CachePath { get; private set; }
+
         public string CacheName { get; private set; }
 
         public string UserAgent { get; set; } = $"RichTea.WebCache/{Constants.VersionToken}";
+
+        private int _cacheMisses = 0;
+
+        public int CacheMisses { get { return _cacheMisses; } }
+
+        private int _cacheHits = 0;
+
+        public int CacheHits { get { return _cacheHits; } }
 
         #region Messages
 
@@ -79,6 +90,11 @@ namespace RichTea.WebCache
         public WebCache(string cacheName)
         {
             CacheName = cacheName;
+
+            CachePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                CacheName);
+
             var version = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
             UserAgent = UserAgent.Replace(Constants.VersionToken, version);
         }
@@ -90,13 +106,11 @@ namespace RichTea.WebCache
             return ex;
         }
 
-        public string GetCachePath(string url)
+        public string GetCachedFilePath(string url)
         {
             var pathName = Uri.EscapeDataString(url);
 
-            var cachePath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                CacheName,
+            var cachePath = Path.Combine(CachePath,
                 pathName);
 
             return cachePath;
@@ -117,7 +131,7 @@ namespace RichTea.WebCache
         protected byte[] GetBinaryFromCache(string url)
         {
             byte[] binary = null;
-            var cachePath = GetCachePath(url);
+            var cachePath = GetCachedFilePath(url);
             if (File.Exists(cachePath))
             {
                 try
@@ -135,7 +149,7 @@ namespace RichTea.WebCache
 
         protected void SaveBinaryToCache(string url, byte[] binary)
         {
-            var cachePath = GetCachePath(url);
+            var cachePath = GetCachedFilePath(url);
             var dirPath = Path.GetDirectoryName(cachePath);
             if (!Directory.Exists(dirPath))
             {
@@ -157,18 +171,22 @@ namespace RichTea.WebCache
                         result = client.DownloadData(url);
                     }
                     SaveResourceToCache(url, result);
+                    Interlocked.Increment(ref _cacheMisses);
                 }
                 catch (WebException ex)
                 {
                     Console.WriteLine("Exception downloading web page from url '{0}'.\n{1}", url, ex);
                 }
+            } else
+            {
+                Interlocked.Increment(ref _cacheHits);
             }
             return result;
         }
 
         protected byte[] GetResourceFromCache(string url)
         {
-            var cachePath = GetCachePath(url);
+            var cachePath = GetCachedFilePath(url);
             if (File.Exists(cachePath))
             {
                 return File.ReadAllBytes(cachePath);
@@ -181,7 +199,7 @@ namespace RichTea.WebCache
 
         protected void SaveResourceToCache(string url, byte[] binary)
         {
-            var cachePath = GetCachePath(url);
+            var cachePath = GetCachedFilePath(url);
             var dirPath = Path.GetDirectoryName(cachePath);
             if (!Directory.Exists(dirPath))
             {
@@ -190,6 +208,11 @@ namespace RichTea.WebCache
             File.WriteAllBytes(cachePath, binary);
         }
 
+        public int CountCachedFiles()
+        {
+            var files = Directory.GetFiles(CachePath);
+            return files.Count();
+        }
 
     }
 }
