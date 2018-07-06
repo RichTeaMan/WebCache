@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,6 +27,18 @@ namespace RichTea.WebCache
         private int _cacheHits = 0;
 
         public int CacheHits { get { return _cacheHits; } }
+
+        private int _concurrentDownloads = 0;
+
+        /// <summary>
+        /// Gets the number of downloads currently occuring.
+        /// </summary>
+        public int ConcurrentDownloads { get { return _concurrentDownloads; } }
+
+        /// <summary>
+        /// Gets or sets the maximum number of concurrent allowed to occur.
+        /// </summary>
+        public int MaxConcurrentDownloads { get; set; } = 5;
 
         #region Messages
 
@@ -116,12 +124,12 @@ namespace RichTea.WebCache
             return cachePath;
         }
 
-        public WebDocument GetWebPage(string url)
+        public async Task<WebDocument> GetWebPageAsync(string url)
         {
             var binary = GetBinaryFromCache(url);
             if (binary == null)
             {
-                binary = GetWebResource(url);
+                binary = await GetWebResourceAsync(url);
                 SaveBinaryToCache(url, binary);
             }
             var webDocument = new WebDocument(url, binary);
@@ -158,17 +166,22 @@ namespace RichTea.WebCache
             File.WriteAllBytes(cachePath, binary);
         }
 
-        public byte[] GetWebResource(string url)
+        public async Task<byte[]> GetWebResourceAsync(string url)
         {
             var result = GetResourceFromCache(url);
             if (result == null)
             {
                 try
                 {
+                    while (_concurrentDownloads > MaxConcurrentDownloads)
+                    {
+                        await Task.Delay(500);
+                    }
+                    Interlocked.Increment(ref _concurrentDownloads);
                     using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
                     {
                         client.Headers.Add("User-Agent", UserAgent);
-                        result = client.DownloadData(url);
+                        result = await client.DownloadDataTaskAsync(url);
                     }
                     SaveResourceToCache(url, result);
                     Interlocked.Increment(ref _cacheMisses);
@@ -176,6 +189,10 @@ namespace RichTea.WebCache
                 catch (WebException ex)
                 {
                     Console.WriteLine("Exception downloading web page from url '{0}'.\n{1}", url, ex);
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref _concurrentDownloads);
                 }
             } else
             {
