@@ -13,17 +13,6 @@ namespace RichTea.WebCache
     /// </summary>
     public class WebCache
     {
-        /// <summary>
-        /// Message event handler.
-        /// </summary>
-        /// <param name="sendor">Sendor.</param>
-        /// <param name="message">Message.</param>
-        public delegate void MessageEventHandler(WebCache sendor, Message message);
-
-        /// <summary>
-        /// Message.
-        /// </summary>
-        public event MessageEventHandler Message;
 
         /// <summary>
         /// Gets the cache directory path.
@@ -65,107 +54,7 @@ namespace RichTea.WebCache
         /// Gets or sets the maximum number of concurrent allowed to occur.
         /// </summary>
         public int MaxConcurrentDownloads { get; set; } = 5;
-
-        #region Messages
-
-        /// <summary>
-        /// Fires the message handler.
-        /// </summary>
-        /// <param name="message">Message.</param>
-        protected void FireMessage(Message message)
-        {
-            Message?.Invoke(this, message);
-        }
-
-        /// <summary>
-        /// Fires the message handler.
-        /// </summary>
-        /// <param name="severity">Severity.</param>
-        /// <param name="text">Text.</param>
-        /// <param name="args">Arguments.</param>
-        protected void FireMessage(Severity severity, string text, params object[] args)
-        {
-            var message = new Message(severity, text, args);
-            FireMessage(message);
-        }
-
-        /// <summary>
-        /// Fires a trace message.
-        /// </summary>
-        /// <param name="text">Text.</param>
-        /// <param name="args">Arguments.</param>
-        protected void FireTrace(string text, params object[] args)
-        {
-            FireMessage(Severity.Trace, text, args);
-        }
-
-        /// <summary>
-        /// Fires an info message.
-        /// </summary>
-        /// <param name="text">Text.</param>
-        /// <param name="args">Arguments.</param>
-        protected void FireInfo(string text, params object[] args)
-        {
-            FireMessage(Severity.Info, text, args);
-        }
-
-        /// <summary>
-        /// Fires an error message.
-        /// </summary>
-        /// <param name="text">Text.</param>
-        /// <param name="args">Arguments.</param>
-        protected void FireError(string text, params object[] args)
-        {
-            FireMessage(Severity.Error, text, args);
-        }
-
-        /// <summary>
-        /// Fires a fatal message.
-        /// </summary>
-        /// <param name="text">Text.</param>
-        /// <param name="args">Arguments.</param>
-        protected void FireFatal(string text, params object[] args)
-        {
-            FireMessage(Severity.Fatal, text, args);
-        }
-
-        /// <summary>
-        /// Fires exception message.
-        /// </summary>
-        /// <param name="severity"></param>
-        /// <param name="exception"></param>
-        /// <param name="text"></param>
-        /// <param name="args"></param>
-        protected void FireExceptionMessage(Severity severity, Exception exception, string text, params object[] args)
-        {
-            var message = new ExceptionMessage(severity, exception, text, args);
-            FireMessage(message);
-        }
-
-        /// <summary>
-        /// Fires an error exception message.
-        /// </summary>
-        /// <param name="exception"></param>
-        /// <param name="text"></param>
-        /// <param name="args"></param>
-        protected void FireErrorExceptionMessage(Exception exception, string text, params object[] args)
-        {
-            FireExceptionMessage(Severity.Error, exception, text, args);
-        }
-
-        /// <summary>
-        /// Fires a fatal exception message.
-        /// </summary>
-        /// <param name="exception"></param>
-        /// <param name="text"></param>
-        /// <param name="args"></param>
-        protected void FireFatalExceptionMessage(Exception exception, string text, params object[] args)
-        {
-            FireExceptionMessage(Severity.Fatal, exception, text, args);
-        }
-
-        #endregion
-
+        
         /// <summary>
         /// Constructs a webcache.
         /// </summary>
