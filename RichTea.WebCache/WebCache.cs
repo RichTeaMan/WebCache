@@ -8,24 +8,50 @@ using System.Threading.Tasks;
 
 namespace RichTea.WebCache
 {
+    /// <summary>
+    /// Web cache.
+    /// </summary>
     public class WebCache
     {
+        /// <summary>
+        /// Message event handler.
+        /// </summary>
+        /// <param name="sendor">Sendor.</param>
+        /// <param name="message">Message.</param>
         public delegate void MessageEventHandler(WebCache sendor, Message message);
 
+        /// <summary>
+        /// Message.
+        /// </summary>
         public event MessageEventHandler Message;
 
+        /// <summary>
+        /// Gets the cache directory path.
+        /// </summary>
         public string CachePath { get; private set; }
 
+        /// <summary>
+        /// Gets the name of the cache.
+        /// </summary>
         public string CacheName { get; private set; }
 
+        /// <summary>
+        /// Gets or sets the user agent string.
+        /// </summary>
         public string UserAgent { get; set; } = $"RichTea.WebCache/{Constants.VersionToken}";
 
         private int _cacheMisses = 0;
 
+        /// <summary>
+        /// Gets cache misses that have result in a web request.
+        /// </summary>
         public int CacheMisses { get { return _cacheMisses; } }
 
         private int _cacheHits = 0;
 
+        /// <summary>
+        /// Gets cache hits that did not result in a web request.
+        /// </summary>
         public int CacheHits { get { return _cacheHits; } }
 
         private int _concurrentDownloads = 0;
@@ -42,52 +68,97 @@ namespace RichTea.WebCache
 
         #region Messages
 
+        /// <summary>
+        /// Fires the message handler.
+        /// </summary>
+        /// <param name="message">Message.</param>
         protected void FireMessage(Message message)
         {
-            var _m = Message;
-            if (_m != null)
-            {
-                _m(this, message);
-            }
+            Message?.Invoke(this, message);
         }
 
+        /// <summary>
+        /// Fires the message handler.
+        /// </summary>
+        /// <param name="severity">Severity.</param>
+        /// <param name="text">Text.</param>
+        /// <param name="args">Arguments.</param>
         protected void FireMessage(Severity severity, string text, params object[] args)
         {
             var message = new Message(severity, text, args);
             FireMessage(message);
         }
 
+        /// <summary>
+        /// Fires a trace message.
+        /// </summary>
+        /// <param name="text">Text.</param>
+        /// <param name="args">Arguments.</param>
         protected void FireTrace(string text, params object[] args)
         {
             FireMessage(Severity.Trace, text, args);
         }
 
+        /// <summary>
+        /// Fires an info message.
+        /// </summary>
+        /// <param name="text">Text.</param>
+        /// <param name="args">Arguments.</param>
         protected void FireInfo(string text, params object[] args)
         {
             FireMessage(Severity.Info, text, args);
         }
 
+        /// <summary>
+        /// Fires an error message.
+        /// </summary>
+        /// <param name="text">Text.</param>
+        /// <param name="args">Arguments.</param>
         protected void FireError(string text, params object[] args)
         {
             FireMessage(Severity.Error, text, args);
         }
 
+        /// <summary>
+        /// Fires a fatal message.
+        /// </summary>
+        /// <param name="text">Text.</param>
+        /// <param name="args">Arguments.</param>
         protected void FireFatal(string text, params object[] args)
         {
             FireMessage(Severity.Fatal, text, args);
         }
 
+        /// <summary>
+        /// Fires exception message.
+        /// </summary>
+        /// <param name="severity"></param>
+        /// <param name="exception"></param>
+        /// <param name="text"></param>
+        /// <param name="args"></param>
         protected void FireExceptionMessage(Severity severity, Exception exception, string text, params object[] args)
         {
             var message = new ExceptionMessage(severity, exception, text, args);
             FireMessage(message);
         }
 
+        /// <summary>
+        /// Fires an error exception message.
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <param name="text"></param>
+        /// <param name="args"></param>
         protected void FireErrorExceptionMessage(Exception exception, string text, params object[] args)
         {
             FireExceptionMessage(Severity.Error, exception, text, args);
         }
 
+        /// <summary>
+        /// Fires a fatal exception message.
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <param name="text"></param>
+        /// <param name="args"></param>
         protected void FireFatalExceptionMessage(Exception exception, string text, params object[] args)
         {
             FireExceptionMessage(Severity.Fatal, exception, text, args);
@@ -95,6 +166,10 @@ namespace RichTea.WebCache
 
         #endregion
 
+        /// <summary>
+        /// Constructs a webcache.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
         public WebCache(string cacheName)
         {
             CacheName = cacheName;
@@ -107,13 +182,11 @@ namespace RichTea.WebCache
             UserAgent = UserAgent.Replace(Constants.VersionToken, version);
         }
 
-        protected virtual GeneratorException GetGeneratorException(string value, Exception innerException = null)
-        {
-            var message = string.Format("Error creating object. Could not get {0}.", value);
-            var ex = new GeneratorException(message, innerException);
-            return ex;
-        }
-
+        /// <summary>
+        /// Gets the path of the url in the cache. The file may or may not exist.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <returns>File path.</returns>
         public string GetCachedFilePath(string url)
         {
             var pathName = Uri.EscapeDataString(url);
@@ -124,6 +197,11 @@ namespace RichTea.WebCache
             return cachePath;
         }
 
+        /// <summary>
+        /// Gets web document from a URL.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <returns>Web document</returns>
         public async Task<WebDocument> GetWebPageAsync(string url)
         {
             var binary = GetBinaryFromCache(url);
@@ -135,7 +213,12 @@ namespace RichTea.WebCache
             var webDocument = new WebDocument(url, binary);
             return webDocument;
         }
-
+        
+        /// <summary>
+        /// Gets byte array of cached object from the given URL.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <returns>Byte array.</returns>
         protected byte[] GetBinaryFromCache(string url)
         {
             byte[] binary = null;
@@ -155,6 +238,11 @@ namespace RichTea.WebCache
             return binary;
         }
 
+        /// <summary>
+        /// Save byte array to cache.
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="binary"></param>
         protected void SaveBinaryToCache(string url, byte[] binary)
         {
             var cachePath = GetCachedFilePath(url);
@@ -166,6 +254,11 @@ namespace RichTea.WebCache
             File.WriteAllBytes(cachePath, binary);
         }
 
+        /// <summary>
+        /// Gets byte array from the url.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <returns>Byte array.</returns>
         public async Task<byte[]> GetWebResourceAsync(string url)
         {
             var result = GetResourceFromCache(url);
@@ -201,6 +294,11 @@ namespace RichTea.WebCache
             return result;
         }
 
+        /// <summary>
+        /// Gets resource ffrom the cache.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <returns>Byte array.</returns>
         protected byte[] GetResourceFromCache(string url)
         {
             var cachePath = GetCachedFilePath(url);
@@ -214,6 +312,11 @@ namespace RichTea.WebCache
             }
         }
 
+        /// <summary>
+        /// Saves resource to cache.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <param name="binary">Byte array.</param>
         protected void SaveResourceToCache(string url, byte[] binary)
         {
             var cachePath = GetCachedFilePath(url);
@@ -225,6 +328,10 @@ namespace RichTea.WebCache
             File.WriteAllBytes(cachePath, binary);
         }
 
+        /// <summary>
+        /// Counts the files in the cache directory.
+        /// </summary>
+        /// <returns></returns>
         public int CountCachedFiles()
         {
             var files = Directory.GetFiles(CachePath);

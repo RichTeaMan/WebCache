@@ -7,15 +7,30 @@ using System.Threading.Tasks;
 
 namespace RichTea.WebCache
 {
+    /// <summary>
+    /// Crawler client.
+    /// </summary>
     public class CrawlerClient : WebClient
     {
+
+        /// <summary>
+        /// Gets or sets timeout.
+        /// </summary>
+        public int Timeout { get; set; } = 60;
+
+        /// <summary>
+        /// Initialises a new instance of the <see cref="CrawlerClient" /> class.
+        /// </summary>
         public CrawlerClient() : base()
         {
             Encoding = Encoding.UTF8;
-            Headers[HttpRequestHeader.UserAgent] = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36";
-            
         }
 
+        /// <summary>
+        /// Returns a <see cref="WebRequest"/> object for the specified resource.
+        /// </summary>
+        /// <param name="uri">URI.</param>
+        /// <returns></returns>
         protected override WebRequest GetWebRequest(Uri uri)
         {
             WebRequest w = base.GetWebRequest(uri);
@@ -26,6 +41,5 @@ namespace RichTea.WebCache
             return w;
         }
 
-        public int Timeout { get; set; }
     }
 }
