@@ -95,6 +95,7 @@ namespace RichTea.WebCache.Test
             {
                 if (disposing)
                 {
+                    httpListener?.Stop();
                     httpListener?.Close();
                 }
 
