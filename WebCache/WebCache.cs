@@ -232,7 +232,10 @@ namespace RichTea.WebCache
         /// </summary>
         public void CleanCache()
         {
-            Directory.Delete(CachePath, true);
+            if (Directory.Exists(CachePath))
+            {
+                Directory.Delete(CachePath, true);
+            }
         }
 
     }
