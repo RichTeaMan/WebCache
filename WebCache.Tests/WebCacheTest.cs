@@ -17,6 +17,7 @@ namespace RichTea.WebCache.Test
         {
             server = new Server(port);
             webCache = new WebCache("test");
+            webCache.CleanCache();
         }
 
         [TestCleanup]
@@ -24,6 +25,8 @@ namespace RichTea.WebCache.Test
         {
             server?.Dispose();
             server = null;
+
+            webCache.CleanCache();
         }
 
         [TestMethod]

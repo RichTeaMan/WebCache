@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <AssemblyName>RichTea.WebCache.Test</AssemblyName>
-    <RootNamespace>RichTea.WebCache.Test</RootNamespace>
+    <AssemblyName>RichTea.WebCache.Tests</AssemblyName>
+    <RootNamespace>RichTea.WebCache.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

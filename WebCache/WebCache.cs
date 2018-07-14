@@ -227,5 +227,13 @@ namespace RichTea.WebCache
             return files.Count();
         }
 
+        /// <summary>
+        /// Deletes all files in the cache.
+        /// </summary>
+        public void CleanCache()
+        {
+            Directory.Delete(CachePath, true);
+        }
+
     }
 }

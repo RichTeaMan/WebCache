@@ -45,6 +45,7 @@ Task("Test")
     .IsDependentOn("Build")
     .Does(() =>
 {
+    DotNetCoreTest("WebCache.Tests/WebCache.Tests.csproj");
 });
 
 //////////////////////////////////////////////////////////////////////
