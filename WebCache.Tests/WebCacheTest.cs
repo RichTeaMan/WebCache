@@ -9,7 +9,7 @@ namespace RichTea.WebCache.Test
     {
         private Server server;
 
-        private int port = 5000;
+        private int port = 9000;
 
         private WebCache webCache;
 
@@ -34,9 +34,9 @@ namespace RichTea.WebCache.Test
         public async Task BasicWebTest()
         {
             string webText = "hello-world";
-            server.Responses.Add("http://localhost:5000/test", new TextResponse(webText, 200));
+            server.Responses.Add($"http://localhost:{port}/test", new TextResponse(webText, 200));
 
-            var response = await webCache.GetWebPageAsync("http://localhost:5000/test");
+            var response = await webCache.GetWebPageAsync($"http://localhost:{port}/test");
 
             Assert.AreEqual(webText, response.GetContents());
         }
@@ -48,12 +48,12 @@ namespace RichTea.WebCache.Test
 
             foreach (var i in Enumerable.Range(0, requestsToMake))
             {
-                string url = $"http://localhost:5000/test/{i}";
+                string url = $"http://localhost:{port}/test/{i}";
                 server.Responses.Add(url, new TextResponse(url, 200));
             }
 
             var tasks = Enumerable.Range(0, requestsToMake).Select(i =>
-                webCache.GetWebPageAsync($"http://localhost:5000/test/{i}"));
+                webCache.GetWebPageAsync($"http://localhost:{port}/test/{i}"));
 
             var webDocuments = await Task.WhenAll(tasks);
             var urlList = webDocuments.Select(d => d.Url).ToArray();
