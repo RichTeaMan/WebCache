@@ -1,4 +1,6 @@
 # RichTea.WebCache
+[![NuGet](https://img.shields.io/nuget/v/RichTea.WebCache.svg?style=flat)](https://www.nuget.org/packages/RichTea.WebCache/)
+
 This project provides a disk backed webcache.
 
 ## CI
