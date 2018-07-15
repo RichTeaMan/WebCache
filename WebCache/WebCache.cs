@@ -54,7 +54,12 @@ namespace RichTea.WebCache
         /// Gets or sets the maximum number of concurrent allowed to occur.
         /// </summary>
         public int MaxConcurrentDownloads { get; set; } = 5;
-        
+
+        /// <summary>
+        /// Gets or sets how many download attempts occur before failing.
+        /// </summary>
+        public int DownloadAttempts { get; set; } = 10;
+
         /// <summary>
         /// Constructs a webcache.
         /// </summary>
@@ -102,7 +107,7 @@ namespace RichTea.WebCache
             var webDocument = new WebDocument(url, binary);
             return webDocument;
         }
-        
+
         /// <summary>
         /// Gets byte array of cached object from the given URL.
         /// </summary>
@@ -118,7 +123,7 @@ namespace RichTea.WebCache
                 {
                     binary = File.ReadAllBytes(cachePath);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine($"Cannot read '{cachePath}' from cache.");
                     Console.WriteLine(ex);
@@ -151,32 +156,46 @@ namespace RichTea.WebCache
         public async Task<byte[]> GetWebResourceAsync(string url)
         {
             var result = GetResourceFromCache(url);
+            int attempts = 0;
             if (result == null)
             {
-                try
+                while (attempts < DownloadAttempts)
                 {
-                    while (_concurrentDownloads > MaxConcurrentDownloads)
+                    try
                     {
-                        await Task.Delay(500);
+                        while (_concurrentDownloads > MaxConcurrentDownloads)
+                        {
+                            await Task.Delay(500);
+                        }
+                        Interlocked.Increment(ref _concurrentDownloads);
+                        using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
+                        {
+                            client.Headers.Add("User-Agent", UserAgent);
+                            result = await client.DownloadDataTaskAsync(url);
+                        }
+                        SaveResourceToCache(url, result);
+                        Interlocked.Increment(ref _cacheMisses);
+                        break;
                     }
-                    Interlocked.Increment(ref _concurrentDownloads);
-                    using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
+                    catch (WebException ex)
                     {
-                        client.Headers.Add("User-Agent", UserAgent);
-                        result = await client.DownloadDataTaskAsync(url);
+                        attempts++;
+                        if (attempts < DownloadAttempts)
+                        {
+                            await Task.Delay(1000);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Exception downloading web page from url '{0}'.\n{1}", url, ex);
+                        }
                     }
-                    SaveResourceToCache(url, result);
-                    Interlocked.Increment(ref _cacheMisses);
+                    finally
+                    {
+                        Interlocked.Decrement(ref _concurrentDownloads);
+                    }
                 }
-                catch (WebException ex)
-                {
-                    Console.WriteLine("Exception downloading web page from url '{0}'.\n{1}", url, ex);
-                }
-                finally
-                {
-                    Interlocked.Decrement(ref _concurrentDownloads);
-                }
-            } else
+            }
+            else
             {
                 Interlocked.Increment(ref _cacheHits);
             }
