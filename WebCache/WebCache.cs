@@ -155,7 +155,9 @@ namespace RichTea.WebCache
         /// <returns>Byte array.</returns>
         public async Task<byte[]> GetWebResourceAsync(string url)
         {
-            var result = GetResourceFromCache(url);
+            var encodedUrl = new Uri(url).AbsoluteUri;
+
+            var result = GetResourceFromCache(encodedUrl);
             int attempts = 0;
             if (result == null)
             {
@@ -171,7 +173,7 @@ namespace RichTea.WebCache
                         using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
                         {
                             client.Headers.Add("User-Agent", UserAgent);
-                            result = await client.DownloadDataTaskAsync(url);
+                            result = await client.DownloadDataTaskAsync(encodedUrl);
                         }
                         SaveResourceToCache(url, result);
                         Interlocked.Increment(ref _cacheMisses);
@@ -179,14 +181,21 @@ namespace RichTea.WebCache
                     }
                     catch (WebException ex)
                     {
-                        attempts++;
-                        if (attempts < DownloadAttempts)
+                        if (ex.Status == WebExceptionStatus.NameResolutionFailure || ex.Status == WebExceptionStatus.Timeout)
                         {
-                            await Task.Delay(1000);
+                            attempts++;
+                            if (attempts < DownloadAttempts)
+                            {
+                                await Task.Delay(1000);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Exception downloading web page from url '{0}'.\n{1}", url, ex);
+                            }
                         }
                         else
                         {
-                            Console.WriteLine("Exception downloading web page from url '{0}'.\n{1}", url, ex);
+                            throw ex;
                         }
                     }
                     finally

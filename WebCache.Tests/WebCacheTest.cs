@@ -30,7 +30,7 @@ namespace RichTea.WebCache.Test
             webCache.CleanCache();
         }
 
-        [TestMethod]
+        [TestMethod] 
         public async Task BasicWebTest()
         {
             string webText = "hello-world";
@@ -39,6 +39,22 @@ namespace RichTea.WebCache.Test
             var response = await webCache.GetWebPageAsync($"http://localhost:{port}/test");
 
             Assert.AreEqual(webText, response.GetContents());
+        }
+
+        [TestMethod]
+        public async Task EncodingWebTest()
+        {
+            string webText1 = "hello-world1";
+            server.Responses.Add($"http://localhost:{port}/test with space", new TextResponse(webText1, 200));
+
+            string webText2 = "hello-world2";
+            server.Responses.Add($"http://localhost:{port}/nested path/test with space", new TextResponse(webText2, 200));
+
+            var response1 = await webCache.GetWebPageAsync($"http://localhost:{port}/test with space");
+            var response2 = await webCache.GetWebPageAsync($"http://localhost:{port}/nested path/test with space");
+
+            Assert.AreEqual(webText1, response1.GetContents());
+            Assert.AreEqual(webText2, response2.GetContents());
         }
 
         [TestMethod]
