@@ -64,13 +64,21 @@ namespace RichTea.WebCache
         /// Constructs a webcache.
         /// </summary>
         /// <param name="cacheName">Cache name.</param>
-        public WebCache(string cacheName)
+        public WebCache(string cacheName) : this(cacheName, Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                cacheName))
+        {
+        }
+
+        /// <summary>
+        /// Constructs a webcache.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="cachePath">Cache path.</param>
+        public WebCache(string cacheName, string cachePath)
         {
             CacheName = cacheName;
-
-            CachePath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                CacheName);
+            CachePath = cachePath;
 
             var version = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
             UserAgent = UserAgent.Replace(Constants.VersionToken, version);
