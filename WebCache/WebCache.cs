@@ -60,6 +60,34 @@ namespace RichTea.WebCache
         /// </summary>
         public int DownloadAttempts { get; set; } = 10;
 
+        private long _bytesDownloaded;
+
+        public long BytesDownloaded { get { return _bytesDownloaded; } }
+
+        private long _downloadTimeSpan;
+
+        /// <summary>
+        /// Gets the total time in milliseconds that downloads have been happening for.
+        /// </summary>
+        public long DownloadTimeSpan { get { return _downloadTimeSpan; } }
+
+        /// <summary>
+        /// Gets download speed in kB/s.
+        /// </summary>
+        public int DownloadSpeed
+        {
+            get
+            {
+
+                int result = 0;
+                if (BytesDownloaded != 0 && DownloadTimeSpan != 0)
+                {
+                    result = (int)(BytesDownloaded / DownloadTimeSpan);
+                }
+                return result;
+            }
+        }
+
         /// <summary>
         /// Constructs a webcache.
         /// </summary>
@@ -177,12 +205,22 @@ namespace RichTea.WebCache
                         {
                             await Task.Delay(500);
                         }
+
+                        long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
                         Interlocked.Increment(ref _concurrentDownloads);
                         using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
                         {
                             client.Headers.Add("User-Agent", UserAgent);
                             result = await client.DownloadDataTaskAsync(encodedUrl);
                         }
+                        long endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                        long interval = endTime - startTime;
+
+                        Interlocked.Add(ref _downloadTimeSpan, interval);
+
+                        Interlocked.Add(ref _bytesDownloaded, result.LongLength);
+
                         SaveResourceToCache(url, result);
                         Interlocked.Increment(ref _cacheMisses);
                         break;
