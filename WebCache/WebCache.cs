@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,8 +12,9 @@ namespace RichTea.WebCache
     /// <summary>
     /// Web cache.
     /// </summary>
-    public class WebCache
+    public class WebCache : IDisposable
     {
+        private readonly HttpClient httpClient = new HttpClient();
 
         /// <summary>
         /// Gets the cache directory path.
@@ -70,6 +72,8 @@ namespace RichTea.WebCache
         /// Gets the total time in milliseconds that downloads have been happening for.
         /// </summary>
         public long DownloadTimeSpan { get { return _downloadTimeSpan; } }
+
+        public RateLimit RateLimit { get; set; }
 
         /// <summary>
         /// Gets download speed in kB/s.
@@ -206,6 +210,15 @@ namespace RichTea.WebCache
                             await Task.Delay(500);
                         }
 
+                        if (RateLimit != null)
+                        {
+                            while (RateLimit.IsThrottled())
+                            {
+                                //await Task.Delay(1000);
+                                Thread.Sleep(1000);
+                            }
+                        }
+
                         long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
                         Interlocked.Increment(ref _concurrentDownloads);
@@ -213,6 +226,7 @@ namespace RichTea.WebCache
                         {
                             client.Headers.Add("User-Agent", UserAgent);
                             result = await client.DownloadDataTaskAsync(encodedUrl);
+                            RateLimit?.AddRequest();
                         }
                         long endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                         long interval = endTime - startTime;
@@ -311,6 +325,41 @@ namespace RichTea.WebCache
                 Directory.Delete(CachePath, true);
             }
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~WebCache() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
 
     }
 }
