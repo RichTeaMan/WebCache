@@ -19,7 +19,7 @@ namespace RichTea.WebCache.Test
         public void Setup()
         {
             server = new Server(port);
-            webCache = new WebCache("test");
+            webCache = WebCache.CreateWebCache("test");
             webCache.CleanCache();
         }
 

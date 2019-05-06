@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -14,7 +15,26 @@ namespace RichTea.WebCache
     /// </summary>
     public class WebCache : IDisposable
     {
+        /// <summary>
+        /// Gets or sets the default cache name for all WebCaches.
+        /// </summary>
+        public static string DefaultCacheName { get; set; } = "RichTea.WebCache";
+
+        /// <summary>
+        /// Gets or sets the default cache pat for all WebCaches.
+        /// </summary>
+        public static string DefaultCachePath { get; set; } = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), DefaultCacheName);
+
+        /// <summary>
+        /// HTTP client.
+        /// </summary>
         private readonly HttpClient httpClient = new HttpClient();
+
+        /// <summary>
+        /// Logger. Might be null.
+        /// </summary>
+        private readonly ILogger<WebCache> logger;
 
         /// <summary>
         /// Gets the cache directory path.
@@ -73,6 +93,9 @@ namespace RichTea.WebCache
         /// </summary>
         public long DownloadTimeSpan { get { return _downloadTimeSpan; } }
 
+        /// <summary>
+        /// Gets or sets rate limit. Null rate limit is regarded as unlimited rates.
+        /// </summary>
         public RateLimit RateLimit { get; set; }
 
         /// <summary>
@@ -82,7 +105,6 @@ namespace RichTea.WebCache
         {
             get
             {
-
                 int result = 0;
                 if (BytesDownloaded != 0 && DownloadTimeSpan != 0)
                 {
@@ -98,27 +120,37 @@ namespace RichTea.WebCache
         public TimeSpan DefaultCacheExpiry { get; set; } = TimeSpan.FromDays(30);
 
         /// <summary>
-        /// Constructs a webcache.
+        /// Creates a cache with the given name and a null logger.
         /// </summary>
-        /// <param name="cacheName">Cache name.</param>
-        public WebCache(string cacheName) : this(cacheName, Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                cacheName))
+        /// <param name="cacheName"></param>
+        /// <returns></returns>
+        public static WebCache CreateWebCache(string cacheName)
         {
+            return new WebCache(null, cacheName, Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), cacheName));
         }
 
         /// <summary>
         /// Constructs a webcache.
         /// </summary>
+        /// <param name="logger">Logger.</param>
+        public WebCache(ILogger<WebCache> logger) : this(logger, DefaultCacheName, DefaultCachePath) { }
+
+        /// <summary>
+        /// Constructs a webcache.
+        /// </summary>
+        /// <param name="logger">Logger.</param>
         /// <param name="cacheName">Cache name.</param>
         /// <param name="cachePath">Cache path.</param>
-        public WebCache(string cacheName, string cachePath)
+        protected WebCache(ILogger<WebCache> logger, string cacheName, string cachePath)
         {
             CacheName = cacheName;
             CachePath = cachePath;
 
             var version = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
             UserAgent = UserAgent.Replace(Constants.VersionToken, version);
+
+            this.logger = logger;
         }
 
         /// <summary>
@@ -178,19 +210,22 @@ namespace RichTea.WebCache
         /// <returns>Byte array.</returns>
         public async Task<byte[]> GetWebResourceAsync(string url, DateTimeOffset expiryDate)
         {
+            logger?.LogInformation($"Getting resource for {url}");
             var result = GetResourceFromCache(url);
             var cacheDate = GetDateOfCachedResource(url);
             if (cacheDate != null && cacheDate < expiryDate)
             {
+                logger?.LogDebug($"{url} has an expired cache.");
                 DeleteResourceFromCache(url);
                 result = null;
             }
 
             if (result == null)
             {
-            int attempts = 0;
+                int attempts = 0;
                 while (attempts < DownloadAttempts)
                 {
+                    logger?.LogDebug($"Download attempt {attempts} for {url}.");
                     try
                     {
                         while (_concurrentDownloads > MaxConcurrentDownloads)
@@ -224,6 +259,7 @@ namespace RichTea.WebCache
 
                         Interlocked.Add(ref _bytesDownloaded, result.LongLength);
 
+                        logger?.LogDebug($"Downloaded resource for {url}.");
                         SaveResourceToCache(url, result);
                         Interlocked.Increment(ref _cacheMisses);
                         break;
@@ -239,7 +275,7 @@ namespace RichTea.WebCache
                             }
                             else
                             {
-                                Console.WriteLine("Exception downloading web page from url '{0}'.\n{1}", url, ex);
+                                logger?.LogWarning(ex, $"Exception downloading web page from url '{url}'");
                             }
                         }
                         else
@@ -277,8 +313,7 @@ namespace RichTea.WebCache
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Cannot read '{cachePath}' from cache.");
-                    Console.WriteLine(ex);
+                    logger?.LogWarning(ex, $"Cannot read '{cachePath}' from cache.");
                 }
             }
             return binary;
@@ -309,6 +344,7 @@ namespace RichTea.WebCache
         /// <returns>Byte array.</returns>
         protected void DeleteResourceFromCache(string url)
         {
+            logger?.LogInformation($"Deleting cache for {url}.");
             var cachePath = GetCachedFilePath(url);
             if (File.Exists(cachePath))
             {
@@ -316,9 +352,9 @@ namespace RichTea.WebCache
                 {
                     File.Delete(cachePath);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    Console.WriteLine($"Could not delete file: {cachePath}");
+                    logger?.LogError(ex, $"Could not delete file: {cachePath}");
                 }
             }
         }
@@ -354,6 +390,7 @@ namespace RichTea.WebCache
         /// </summary>
         public void CleanCache()
         {
+            logger?.LogInformation("Deleting entire cache.");
             if (Directory.Exists(CachePath))
             {
                 Directory.Delete(CachePath, true);
@@ -369,29 +406,19 @@ namespace RichTea.WebCache
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects).
+                    httpClient.Dispose();
                 }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
 
                 disposedValue = true;
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~WebCache() {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        //   Dispose(false);
-        // }
 
         // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            // GC.SuppressFinalize(this);
         }
         #endregion
 
