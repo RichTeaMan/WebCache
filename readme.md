@@ -3,6 +3,12 @@
 
 This project provides a disk backed webcache.
 
+## Cake Tasks
+This project uses [Cake](https://cakebuild.net).
+* ./cake.sh -target=Clean
+* ./cake.sh -target=Build
+* ./cake.sh -target=Test
+
 ## CI
 
 |        | Windows | Linux |
