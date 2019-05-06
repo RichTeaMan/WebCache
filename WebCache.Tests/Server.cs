@@ -42,7 +42,11 @@ namespace RichTea.WebCache.Test
             try
             {
                 // Call EndGetContext to complete the asynchronous operation.
-                HttpListenerContext httpListenerContext = httpListener.EndGetContext(result);
+                HttpListenerContext httpListenerContext = httpListener?.EndGetContext(result);
+                if (httpListenerContext == null)
+                {
+                    return;
+                }
                 HttpListenerRequest request = httpListenerContext.Request;
 
                 string body = null;
@@ -82,9 +86,10 @@ namespace RichTea.WebCache.Test
             }
             finally
             {
+                var callBack = new AsyncCallback(ListenerCallback);
                 if (!disposedValue)
                 {
-                    httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), this);
+                    httpListener?.BeginGetContext(callBack, this);
                 }
             }
 
@@ -101,10 +106,12 @@ namespace RichTea.WebCache.Test
         {
             if (!disposedValue)
             {
+                var _httpListener = httpListener;
+                httpListener = null;
                 if (disposing)
                 {
-                    httpListener?.Stop();
-                    httpListener?.Close();
+                    _httpListener?.Stop();
+                    _httpListener?.Close();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
