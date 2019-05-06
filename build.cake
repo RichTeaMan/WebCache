@@ -60,10 +60,17 @@ Task("CI")
     .IsDependentOn("Test")
     .Does(() =>
 {
-    CoverallsIo("WebCache.Tests/coverage.opencover.xml", new CoverallsIoSettings()
+
+    if (IsRunningOnWindows()) {
+        CoverallsIo("WebCache.Tests/coverage.opencover.xml", new CoverallsIoSettings()
+        {
+            RepoToken = coverallsToken
+        });
+    }
+    else
     {
-        RepoToken = coverallsToken
-    });
+        Information("Coveralls coverage is not supported on non Windows OS");
+    }
 
 });
 
