@@ -1,12 +1,15 @@
-#tool nuget:?package=NUnit.ConsoleRunner&version=3.4.0
-#tool nuget:?package=vswhere
-#addin "Cake.Incubator"
+#addin "nuget:https://api.nuget.org/v3/index.json?package=Cake.Coveralls&version=0.10.0"
+#tool "nuget:https://api.nuget.org/v3/index.json?package=coveralls.io&version=1.4.2"
+#tool "nuget:https://api.nuget.org/v3/index.json?package=OpenCover&version=4.7.922"
+#tool "nuget:https://api.nuget.org/v3/index.json?package=ReportGenerator&version=4.1.4"
+
 //////////////////////////////////////////////////////////////////////
 // ARGUMENTS
 //////////////////////////////////////////////////////////////////////
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
+var coverallsToken = EnvironmentVariable("coverallsToken") ?? string.Empty;
 
 //////////////////////////////////////////////////////////////////////
 // PREPARATION
@@ -45,7 +48,23 @@ Task("Test")
     .IsDependentOn("Build")
     .Does(() =>
 {
-    DotNetCoreTest("WebCache.Tests/WebCache.Tests.csproj");
+     var settings = new DotNetCoreTestSettings
+     {
+         Configuration = configuration,
+        ArgumentCustomization = args => args.Append("/p:CollectCoverage=true /p:CoverletOutputFormat=opencover")
+     };
+    DotNetCoreTest("WebCache.Tests/WebCache.Tests.csproj", settings);
+});
+
+Task("CI")
+    .IsDependentOn("Test")
+    .Does(() =>
+{
+    CoverallsIo("WebCache.Tests/coverage.opencover.xml", new CoverallsIoSettings()
+    {
+        RepoToken = coverallsToken
+    });
+
 });
 
 //////////////////////////////////////////////////////////////////////
