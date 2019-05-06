@@ -4,6 +4,8 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <AssemblyName>RichTea.WebCache.Tests</AssemblyName>
     <RootNamespace>RichTea.WebCache.Tests</RootNamespace>
+    <IsCakeTestProject>true</IsCakeTestProject>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
