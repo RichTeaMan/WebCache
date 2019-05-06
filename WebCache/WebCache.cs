@@ -93,6 +93,11 @@ namespace RichTea.WebCache
         }
 
         /// <summary>
+        /// Gets or sets the default cache expiry if one isn't specified. Defaults to 30 days.
+        /// </summary>
+        public TimeSpan DefaultCacheExpiry { get; set; } = TimeSpan.FromDays(30);
+
+        /// <summary>
         /// Constructs a webcache.
         /// </summary>
         /// <param name="cacheName">Cache name.</param>
@@ -138,54 +143,20 @@ namespace RichTea.WebCache
         /// <returns>Web document</returns>
         public async Task<WebDocument> GetWebPageAsync(string url)
         {
-            var binary = GetBinaryFromCache(url);
-            if (binary == null)
-            {
-                binary = await GetWebResourceAsync(url);
-                SaveBinaryToCache(url, binary);
-            }
-            var webDocument = new WebDocument(url, binary);
-            return webDocument;
+            return await GetWebPageAsync(url, DateTimeOffset.Now - DefaultCacheExpiry);
         }
 
         /// <summary>
-        /// Gets byte array of cached object from the given URL.
+        /// Gets web document from a URL.
         /// </summary>
         /// <param name="url">URL.</param>
-        /// <returns>Byte array.</returns>
-        protected byte[] GetBinaryFromCache(string url)
+        /// <param name="expiryDate">Expiry date. A resource older than this will be refetched.</param>
+        /// <returns>Web document</returns>
+        public async Task<WebDocument> GetWebPageAsync(string url, DateTimeOffset expiryDate)
         {
-            byte[] binary = null;
-            var cachePath = GetCachedFilePath(url);
-            if (File.Exists(cachePath))
-            {
-                try
-                {
-                    binary = File.ReadAllBytes(cachePath);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Cannot read '{cachePath}' from cache.");
-                    Console.WriteLine(ex);
-                }
-            }
-            return binary;
-        }
-
-        /// <summary>
-        /// Save byte array to cache.
-        /// </summary>
-        /// <param name="url"></param>
-        /// <param name="binary"></param>
-        protected void SaveBinaryToCache(string url, byte[] binary)
-        {
-            var cachePath = GetCachedFilePath(url);
-            var dirPath = Path.GetDirectoryName(cachePath);
-            if (!Directory.Exists(dirPath))
-            {
-                Directory.CreateDirectory(dirPath);
-            }
-            File.WriteAllBytes(cachePath, binary);
+            var binary = await GetWebResourceAsync(url);
+            var webDocument = new WebDocument(url, binary);
+            return webDocument;
         }
 
         /// <summary>
@@ -195,12 +166,29 @@ namespace RichTea.WebCache
         /// <returns>Byte array.</returns>
         public async Task<byte[]> GetWebResourceAsync(string url)
         {
-            var encodedUrl = new Uri(url).AbsoluteUri;
+            var bytes = await GetWebResourceAsync(url, DateTimeOffset.Now - DefaultCacheExpiry);
+            return bytes;
+        }
 
-            var result = GetResourceFromCache(encodedUrl);
-            int attempts = 0;
+        /// <summary>
+        /// Gets byte array from the url.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <param name="expiryDate">Expiry date. A resource older than this will be refetched.</param>
+        /// <returns>Byte array.</returns>
+        public async Task<byte[]> GetWebResourceAsync(string url, DateTimeOffset expiryDate)
+        {
+            var result = GetResourceFromCache(url);
+            var cacheDate = GetDateOfCachedResource(url);
+            if (cacheDate != null && cacheDate < expiryDate)
+            {
+                DeleteResourceFromCache(url);
+                result = null;
+            }
+
             if (result == null)
             {
+            int attempts = 0;
                 while (attempts < DownloadAttempts)
                 {
                     try
@@ -225,6 +213,7 @@ namespace RichTea.WebCache
                         using (var client = new CrawlerClient() { Timeout = 10 * 60 * 1000 })
                         {
                             client.Headers.Add("User-Agent", UserAgent);
+                            var encodedUrl = new Uri(url).AbsoluteUri;
                             result = await client.DownloadDataTaskAsync(encodedUrl);
                             RateLimit?.AddRequest();
                         }
@@ -272,20 +261,65 @@ namespace RichTea.WebCache
         }
 
         /// <summary>
-        /// Gets resource ffrom the cache.
+        /// Gets resource from the cache.
         /// </summary>
         /// <param name="url">URL.</param>
         /// <returns>Byte array.</returns>
         protected byte[] GetResourceFromCache(string url)
         {
+            byte[] binary = null;
             var cachePath = GetCachedFilePath(url);
             if (File.Exists(cachePath))
             {
-                return File.ReadAllBytes(cachePath);
+                try
+                {
+                    binary = File.ReadAllBytes(cachePath);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Cannot read '{cachePath}' from cache.");
+                    Console.WriteLine(ex);
+                }
+            }
+            return binary;
+        }
+
+        /// <summary>
+        /// Gets the last modified date of a cached resource. Null if the resource is not cached.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <returns>DateTimeOffset</returns>
+        public DateTimeOffset? GetDateOfCachedResource(string url)
+        {
+            var cachePath = GetCachedFilePath(url);
+            if (File.Exists(cachePath))
+            {
+                return new DateTimeOffset(File.GetLastWriteTime(cachePath));
             }
             else
             {
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Deletes resource from the cache.
+        /// </summary>
+        /// <param name="url">URL.</param>
+        /// <returns>Byte array.</returns>
+        protected void DeleteResourceFromCache(string url)
+        {
+            var cachePath = GetCachedFilePath(url);
+            if (File.Exists(cachePath))
+            {
+                try
+                {
+                    File.Delete(cachePath);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine($"Could not delete file: {cachePath}");
+                }
             }
         }
 

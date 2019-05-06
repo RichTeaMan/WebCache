@@ -1,4 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -78,6 +80,49 @@ namespace RichTea.WebCache.Test
             Assert.AreEqual(requestsToMake, server.RequestUriList.Count);
             CollectionAssert.AreEqual(urlList, contentList);
             
+        }
+
+        [TestMethod]
+        public async Task CacheDateTest()
+        {
+            string webText = "test";
+            server.Responses.Add($"http://localhost:{port}/dateTest", new TextResponse(webText, 200));
+
+            await webCache.GetWebPageAsync($"http://localhost:{port}/dateTest");
+            var cachedDate = webCache.GetDateOfCachedResource($"http://localhost:{port}/dateTest");
+
+            Assert.IsNotNull(cachedDate);
+            Assert.IsTrue(cachedDate > DateTime.Now.AddSeconds(-1) && cachedDate < DateTime.Now.AddSeconds(1));
+        }
+
+        [TestMethod]
+        public void NullCacheDateTest()
+        {
+            // this path does not exist
+            var cachedDate = webCache.GetDateOfCachedResource($"http://localhost:{port}/dateTest2");
+
+            Assert.IsNull(cachedDate);
+        }
+
+        [TestMethod]
+        public async Task CacheExpiryTest()
+        {
+            // setup
+            string remoteUrl = $"http://localhost:{port}/cacheExpiry";
+            string webText = "hello-world";
+            string updatedWebContext = "hello-world-updated";
+            server.Responses.Add(remoteUrl, new TextResponse(webText, 200));
+
+            await webCache.GetWebPageAsync(remoteUrl);
+            var cachedFilepath = webCache.GetCachedFilePath(remoteUrl);
+            File.SetLastWriteTime(cachedFilepath, DateTime.Now.AddYears(-1));
+
+            server.Responses[remoteUrl] = new TextResponse(updatedWebContext, 200);
+
+            // test
+            var updatedResponse = await webCache.GetWebPageAsync(remoteUrl, DateTime.Now.AddDays(-1));
+
+            Assert.AreEqual(updatedWebContext, updatedResponse.GetContents());
         }
     }
 }

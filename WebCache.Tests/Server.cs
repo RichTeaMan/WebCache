@@ -18,7 +18,7 @@ namespace RichTea.WebCache.Test
 
         public IReadOnlyList<HttpListenerRequest> RequestUriList { get { return _requestUriList.ToArray(); } }
 
-        public Response Default404Response { get; } = new TextResponse("Not Found", 404);
+        public Response Default404Response { get; } = new TextResponse("Not Found", 404, DateTimeOffset.MinValue);
 
         public Server(int port)
         {
@@ -77,7 +77,10 @@ namespace RichTea.WebCache.Test
             }
             finally
             {
-                httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), this);
+                if (!disposedValue)
+                {
+                    httpListener.BeginGetContext(new AsyncCallback(ListenerCallback), this);
+                }
             }
 
         }

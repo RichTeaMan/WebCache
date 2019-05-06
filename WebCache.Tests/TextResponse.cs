@@ -1,4 +1,5 @@
 ﻿using RichTea.Common;
+using System;
 using System.Text;
 
 namespace RichTea.WebCache.Test
@@ -8,9 +9,13 @@ namespace RichTea.WebCache.Test
         public string ResponseText { get; private set; }
 
 
-        public TextResponse(string responseText, int statusCode) : base(Encoding.UTF8.GetBytes(responseText), statusCode)
+        public TextResponse(string responseText, int statusCode, DateTimeOffset cacheDate) : base(Encoding.UTF8.GetBytes(responseText), statusCode, cacheDate)
         {
             ResponseText = responseText;
+        }
+
+        public TextResponse(string responseText, int statusCode) : this(responseText, statusCode, DateTimeOffset.Now)
+        {
         }
 
         public override string ToString()
