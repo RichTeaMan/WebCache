@@ -183,6 +183,9 @@ get_current_os_name() {
     elif [[ "$uname" = MINGW** ]]; then
         echo "win"
         return 0
+    elif [[ "$uname" = MSYS_NT** ]]; then
+        echo "win"
+        return 0
     fi
 
     say_err "OS name could not be detected: UName = $uname"
