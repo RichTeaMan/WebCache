@@ -51,7 +51,7 @@ Task("Test")
      var settings = new DotNetCoreTestSettings
      {
          Configuration = configuration,
-        ArgumentCustomization = args => args.Append("/p:CollectCoverage=true /p:CoverletOutputFormat=opencover")
+         ArgumentCustomization = args => args.Append("/p:CollectCoverage=true /p:CoverletOutputFormat=opencover")
      };
     DotNetCoreTest("WebCache.Tests/WebCache.Tests.csproj", settings);
 });
@@ -62,17 +62,18 @@ Task("CI")
 {
 
     if (IsRunningOnWindows()) {
-		try {
-			CoverallsIo("WebCache.Tests/coverage.opencover.xml", new CoverallsIoSettings()
-			{
-				RepoToken = coverallsToken
-			});
-		}
-		catch (Exception ex)
-		{
-			Error("Error occured while coveralls. " + ex.Message);
-			Error(ex);
-		}
+        try {
+            CoverallsIo("WebCache.Tests/coverage.opencover.xml", new CoverallsIoSettings()
+            {
+                RepoToken = coverallsToken
+            });
+            Information("Coveralls coverage report submitted.");
+        }
+        catch (Exception ex)
+        {
+            Error("Error occured while coveralls. " + ex.Message);
+            Error(ex);
+        }
     }
     else
     {
