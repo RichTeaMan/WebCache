@@ -1,7 +1,7 @@
-#addin "nuget:https://api.nuget.org/v3/index.json?package=Cake.Coveralls&version=0.10.0"
-#tool "nuget:https://api.nuget.org/v3/index.json?package=coveralls.io&version=1.4.2"
-#tool "nuget:https://api.nuget.org/v3/index.json?package=OpenCover&version=4.7.922"
-#tool "nuget:https://api.nuget.org/v3/index.json?package=ReportGenerator&version=4.1.4"
+#addin "nuget:https://api.nuget.org/v3/index.json?package=Cake.Coveralls"
+#tool "nuget:https://api.nuget.org/v3/index.json?package=coveralls.io"
+#tool "nuget:https://api.nuget.org/v3/index.json?package=OpenCover"
+#tool "nuget:https://api.nuget.org/v3/index.json?package=ReportGenerator"
 
 //////////////////////////////////////////////////////////////////////
 // ARGUMENTS
@@ -9,7 +9,6 @@
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
-var coverallsToken = EnvironmentVariable("coverallsToken") ?? string.Empty;
 
 //////////////////////////////////////////////////////////////////////
 // PREPARATION
@@ -65,7 +64,7 @@ Task("CI")
         try {
             CoverallsIo("WebCache.Tests/coverage.opencover.xml", new CoverallsIoSettings()
             {
-                RepoToken = coverallsToken
+                RepoToken = "IoImVMq1SumzKI9hCDv9s0dzlrDIfBxvk"
             });
             Information("Coveralls coverage report submitted.");
         }
