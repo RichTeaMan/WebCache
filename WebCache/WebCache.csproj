@@ -6,14 +6,14 @@
     <Authors>Thomas Holmes</Authors>
     <Company>Thomas Holmes</Company>
     <Product>WebCache</Product>
-    <Copyright>Thomas Holmes 2018</Copyright>
+    <Copyright>Thomas Holmes 2018-2019</Copyright>
     <PackageLicenseUrl>https://github.com/RichTeaMan/WebCache/blob/master/licence.txt</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/RichTeaMan/WebCache</PackageProjectUrl>
     <RepositoryUrl>https://github.com/RichTeaMan/WebCache</RepositoryUrl>
     <PackageTags>web cache</PackageTags>
-    <Version>0.4.2-beta</Version>
-    <AssemblyVersion>0.4.2.0</AssemblyVersion>
-    <FileVersion>0.4.2.0</FileVersion>
+    <Version>0.5.0-beta</Version>
+    <AssemblyVersion>0.5.0.0</AssemblyVersion>
+    <FileVersion>0.5.0.0</FileVersion>
     <PackageId>RichTea.WebCache</PackageId>
     <AssemblyName>RichTea.WebCache</AssemblyName>
     <RootNamespace>RichTea.WebCache</RootNamespace>
