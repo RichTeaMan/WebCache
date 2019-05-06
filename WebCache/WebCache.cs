@@ -84,6 +84,9 @@ namespace RichTea.WebCache
 
         private long _bytesDownloaded;
 
+        /// <summary>
+        /// Gets total number of bytes downloaded by this cache.
+        /// </summary>
         public long BytesDownloaded { get { return _bytesDownloaded; } }
 
         private long _downloadTimeSpan;
@@ -237,7 +240,7 @@ namespace RichTea.WebCache
                         {
                             while (RateLimit.IsThrottled())
                             {
-                                //await Task.Delay(1000);
+                                // purposefully tie up the thread so others don't continue to hammer the endpoint.
                                 Thread.Sleep(1000);
                             }
                         }
@@ -400,6 +403,10 @@ namespace RichTea.WebCache
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
+        /// <summary>
+        /// Disposes.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -413,8 +420,9 @@ namespace RichTea.WebCache
             }
         }
 
-
-        // This code added to correctly implement the disposable pattern.
+        /// <summary>
+        /// Disposes.
+        /// </summary>
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.

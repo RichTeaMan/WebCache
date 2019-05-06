@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace RichTea.WebCache
 {
+    /// <summary>
+    /// Rate limit.
+    /// </summary>
     public class RateLimit
     {
         private readonly object dequeueLock = new object();
@@ -19,12 +22,19 @@ namespace RichTea.WebCache
         /// </summary>
         public int Requests { get; set; }
 
+        /// <summary>
+        /// Adds a request to the rate limit metrics.
+        /// </summary>
         public void AddRequest()
         {
             long seconds = (long)TimeSpan.FromTicks(DateTime.Now.Ticks).TotalSeconds;
             requestTimes.Enqueue(seconds);
         }
 
+        /// <summary>
+        /// Determines if the cache should be throttling.
+        /// </summary>
+        /// <returns></returns>
         public bool IsThrottled()
         {
             long seconds = (long)TimeSpan.FromTicks(DateTime.Now.Ticks).TotalSeconds;
