@@ -1,6 +1,8 @@
 # RichTea.WebCache
 [![NuGet](https://img.shields.io/nuget/v/RichTea.WebCache.svg?style=flat)](https://www.nuget.org/packages/RichTea.WebCache/)
 
+[![Travis Build Status](https://travis-ci.org/RichTeaMan/WebCache.svg?branch=master)](https://travis-ci.org/RichTeaMan/WebCache)
+
 This project provides a disk backed webcache.
 
 ## Cake Tasks
@@ -8,9 +10,3 @@ This project uses [Cake](https://cakebuild.net).
 * ./cake.sh -target=Clean
 * ./cake.sh -target=Build
 * ./cake.sh -target=Test
-
-## CI
-
-|        | Windows | Linux |
-| ------ | --------|-------|
-| Master | [![Build status](https://ci.appveyor.com/api/projects/status/6m8k8dspx6h24m4n/branch/master?svg=true)](https://ci.appveyor.com/project/RichTeaMan/webcache/branch/master) | [![Build Status](https://travis-ci.org/RichTeaMan/WebCache.svg?branch=master)](https://travis-ci.org/RichTeaMan/WebCache) |
