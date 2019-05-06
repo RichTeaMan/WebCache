@@ -62,10 +62,17 @@ Task("CI")
 {
 
     if (IsRunningOnWindows()) {
-        CoverallsIo("WebCache.Tests/coverage.opencover.xml", new CoverallsIoSettings()
-        {
-            RepoToken = coverallsToken
-        });
+		try {
+			CoverallsIo("WebCache.Tests/coverage.opencover.xml", new CoverallsIoSettings()
+			{
+				RepoToken = coverallsToken
+			});
+		}
+		catch (Exception ex)
+		{
+			Error("Error occured while coveralls. " + ex.Message);
+			Error(ex);
+		}
     }
     else
     {
