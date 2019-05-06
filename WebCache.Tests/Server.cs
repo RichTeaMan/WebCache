@@ -75,6 +75,11 @@ namespace RichTea.WebCache.Test
                 }
 
             }
+            catch (HttpListenerException ex) when (ex.ErrorCode == 995)
+            {
+                // System.Net.HttpListenerException: The I/ O operation has been aborted because of either a thread exit or an application request
+                // This appears to happen if a socket is closed, it seems safe to carry on and begin listening again.
+            }
             finally
             {
                 if (!disposedValue)
